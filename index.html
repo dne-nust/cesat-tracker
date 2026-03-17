@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CESAT/NUST FMUv6X Project Tracker</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 14px; background: #f0f4f8; color: #222; }
+    header { background: #1F4E79; color: #fff; padding: 16px 24px; }
+    header h1 { font-size: 20px; font-weight: bold; }
+    header p  { font-size: 12px; color: #cce4f7; margin-top: 4px; }
+    nav { display: flex; gap: 4px; background: #2E75B6; padding: 0 24px; }
+    nav button { background: none; border: none; color: #cce4f7; cursor: pointer;
+                 padding: 10px 16px; font-size: 13px; font-weight: bold; border-bottom: 3px solid transparent; }
+    nav button.active { color: #fff; border-bottom-color: #fff; }
+    main { padding: 20px 24px; max-width: 1100px; margin: 0 auto; }
+    section h2 { color: #1F4E79; font-size: 16px; margin-bottom: 14px; padding-bottom: 6px;
+                 border-bottom: 2px solid #2E75B6; }
+    table { width: 100%; border-collapse: collapse; background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 24px; }
+    th { background: #1F4E79; color: #fff; padding: 9px 12px; text-align: left; font-size: 12px; }
+    td { padding: 8px 12px; border-bottom: 1px solid #e0e0e0; font-size: 13px; vertical-align: top; }
+    tr:nth-child(even) td { background: #f7f9fc; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px;
+             font-size: 11px; font-weight: bold; white-space: nowrap; }
+    .badge-green   { background: #E2EFDA; color: #1e6b2e; }
+    .badge-yellow  { background: #FFF2CC; color: #7a5a00; }
+    .badge-orange  { background: #FFE5CC; color: #8B4513; }
+    .badge-red     { background: #FFCCCC; color: #8B0000; }
+    .badge-blue    { background: #D6E4F0; color: #1F4E79; }
+    .badge-gray    { background: #e8e8e8; color: #555; }
+    .progress-wrap { background: #e0e0e0; border-radius: 4px; height: 8px; width: 100%; }
+    .progress-bar  { height: 8px; border-radius: 4px; background: #2E75B6; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: #fff; border-radius: 6px; padding: 14px 16px;
+                 box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 4px solid #2E75B6; }
+    .stat-card .num { font-size: 28px; font-weight: bold; color: #1F4E79; }
+    .stat-card .lbl { font-size: 11px; color: #666; margin-top: 2px; }
+    footer { text-align: center; padding: 16px; color: #888; font-size: 11px; border-top: 1px solid #ddd; margin-top: 24px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+/* ─── Seed Data (from PP v2.6 and HEP v6.0) ──────────────────────────────── */
+const DATA = {
+  milestones: [
+    { id:'M1', date:'31 May 2026', desc:'Hardware design complete, PCB fabricated, bring-up S1–S10', pct:10,  status:'IN PROGRESS', blocker:'OI-07' },
+    { id:'M2', date:'30 Jun 2026', desc:'PX4 board target, FPGA RTL, all drivers, SITL, QGC fork',  pct:0,   status:'NOT STARTED', blocker:'M1, OI-04, OI-05, OI-08' },
+    { id:'M3', date:'31 Aug 2026', desc:'Custom algorithms, STIM300, protocol framework, QGC telemetry', pct:0, status:'NOT STARTED', blocker:'M2, OI-06, OI-09' },
+    { id:'M4', date:'31 Oct 2026', desc:'Full validation, flight test, QGC flight mode UI',          pct:0,   status:'NOT STARTED', blocker:'M3' },
+    { id:'M5', date:'30 Nov 2026', desc:'Final demonstration, closeout',                             pct:0,   status:'NOT STARTED', blocker:'M4' },
+  ],
+
+  openItems: [
+    { id:'OI-04', desc:'KT-EX9-1 PROD_ID register and expected value for SPI6 WHO_AM_I detection', owner:'Dr. Najeeb Ahmad', target:'Before M2', status:'OPEN', blocks:'cesat_imu (KT-EX9-1 path)' },
+    { id:'OI-05', desc:'KT-EX9-2 SPI mode (Mode 0 or Mode 3)', owner:'Dr. Najeeb Ahmad', target:'Before M2', status:'OPEN', blocks:'cesat_imu (KT-EX9-2 path)' },
+    { id:'OI-06', desc:'STIM300 driver milestone — M2 or M3? Decision required immediately', owner:'Dr. Shakaiba Majeed', target:'Immediate', status:'OPEN', blocks:'cesat_stim300 scheduling' },
+    { id:'OI-07', desc:'BASE-01 5V rail current budget with STIM300 300 mA peak load', owner:'PCB designer', target:'Before M1 PCB order', status:'OPEN', blocks:'PCB ORDER — BLOCKS M1' },
+    { id:'OI-08', desc:'Custom INS algorithm type (EKF/UKF/complementary) and control law selection', owner:'Dr. Najeeb Ahmad + Dr. Hamid Jabbar', target:'Before M2', status:'OPEN', blocks:'cesat_estimator, cesat_controller' },
+    { id:'OI-09', desc:'Custom FPGA UART protocol — framing, CRC, multiplexing on ttyFPGA', owner:'Dr. Najeeb Ahmad', target:'Before M3', status:'OPEN', blocks:'CesatProtocolBase impl' },
+    { id:'OI-11', desc:'BMP581 I2C4 intermittent bus spikes (PX4 #26287) — verify pull-ups at Stage S4', owner:'PCB designer + firmware', target:'Stage S4 bring-up', status:'OPEN', blocks:'Monitor only' },
+    { id:'OI-12', desc:'HARD BOOT FAILURE: Replace icp201xx at 0x63 with bmp581 at 0x46 in rc.board_sensors and board_config.h', owner:'Firmware team', target:'Before M2', status:'APPLIED', blocks:'Boot (fix applied, verify at S6)' },
+  ],
+
+  risks: [
+    /* Hardware risks R01–R14 */
+    { id:'R01', desc:'DS-012 ICM42649 typo causes wrong sensor ordered', sev:'Low',    hw:true,  status:'CLOSED',   note:'ICM-45686 confirmed (DDL-04)' },
+    { id:'R02', desc:'ICP-20100 EOL, no stock',                          sev:'Low',    hw:true,  status:'CLOSED',   note:'BMP581 selected (DDL-02)' },
+    { id:'R03', desc:'MMC5983MA inferior to RM3100',                     sev:'Low',    hw:true,  status:'CLOSED',   note:'RM3100 selected (DDL-03)' },
+    { id:'R04', desc:'STIM300 300 mA 5V load causes BASE-01 brownout',   sev:'High',   hw:true,  status:'OPEN',     note:'OI-07: current budget required before PCB order' },
+    { id:'R05', desc:'KT-EX9-1 SPI WHO_AM_I unknown',                    sev:'Medium', hw:true,  status:'OPEN',     note:'OI-04 pending' },
+    { id:'R06', desc:'KT-EX9-2 SPI mode unknown',                        sev:'Medium', hw:true,  status:'OPEN',     note:'OI-05 pending' },
+    { id:'R07', desc:'ICM-45686 DRDY PF2 shared signal conflict',        sev:'Medium', hw:true,  status:'OPEN',     note:'Verify at Stage S5' },
+    { id:'R08', desc:'50-pin FPC crosstalk between SPI2 and SPI3',       sev:'Medium', hw:true,  status:'OPEN',     note:'Add shield plane; verify at S5' },
+    { id:'R09', desc:'RM3100 bare IC land pattern mismatch',             sev:'Low',    hw:true,  status:'OPEN',     note:'Cross-check KiCad footprint before order' },
+    { id:'R10', desc:'ADIS16488A SPI Mode 3 vs STM32H753 SPI6 default',  sev:'Low',    hw:true,  status:'OPEN',     note:'Explicitly set Mode 3 in driver; verify at S7' },
+    { id:'R11', desc:'BMP581 I2C4 intermittent bus spikes (PX4 #26287)', sev:'Medium', hw:true,  status:'OPEN',     note:'OI-11: pull-ups + bus speed at S4' },
+    { id:'R12', desc:'FPGA VCCO/VCCINT power sequencing violation',      sev:'Medium', hw:true,  status:'OPEN',     note:'Review XC7S25 power-up requirements; verify at S1' },
+    { id:'R13', desc:'FPGA DONE pin not polled — FPGA may not be ready', sev:'Medium', hw:true,  status:'OPEN',     note:'cesat_fpga driver must poll DONE before SPI4 access' },
+    { id:'R14', desc:'I2C3 bus capacitance >400 pF with 5 devices',      sev:'Medium', hw:true,  status:'OPEN',     note:'Measure; adjust pull-ups if needed' },
+    /* Software risks SR01–SR08 */
+    { id:'SR01', desc:'OI-12 not applied — barometer absent on boot',    sev:'Critical', hw:false, status:'APPLIED', note:'Fix in rc.board_sensors; verify at S6' },
+    { id:'SR02', desc:'cesat_fpga starts after cesat_imu — MCP23017 nRESET not deasserted', sev:'High', hw:false, status:'MITIGATED', note:'Boot order enforced in rc.board_sensors' },
+    { id:'SR03', desc:'FPGA RTL resource overrun — >27% LUT or >33% BRAM', sev:'Medium', hw:false, status:'MONITOR', note:'73% LUT + 67% BRAM headroom; monitor at M2' },
+    { id:'SR04', desc:'OI-09 protocol undefined before M3 — ttyFPGA unusable', sev:'High', hw:false, status:'OPEN', note:'OI-09 target: before M3' },
+    { id:'SR05', desc:'OI-08 not decided — cesat_estimator blocked',     sev:'High',   hw:false, status:'OPEN',     note:'OI-08 target: before M2' },
+    { id:'SR06', desc:'Upstream PX4 merge breaks cesat board target',    sev:'Medium', hw:false, status:'ONGOING',  note:'Additive-only policy; upstream merge guide committed' },
+    { id:'SR07', desc:'cesat.xml diverges between repos',                sev:'Medium', hw:false, status:'AUTOMATED', note:'dialect-sync.yml checks weekly' },
+    { id:'SR08', desc:'CESAT QGC panels crash when messages absent',     sev:'Medium', hw:false, status:'OPEN',     note:'SR-QGC-03 requirement; implement at M2' },
+  ],
+};
+
+/* ─── Helpers ────────────────────────────────────────────────────────────── */
+const {useState} = React;
+
+function sevBadge(sev) {
+  const map = { Critical:'badge-red', High:'badge-orange', Medium:'badge-yellow', Low:'badge-green' };
+  return <span className={`badge ${map[sev]||'badge-gray'}`}>{sev}</span>;
+}
+function statusBadge(s) {
+  const map = {
+    'IN PROGRESS':'badge-blue', 'NOT STARTED':'badge-gray',
+    'OPEN':'badge-orange', 'APPLIED':'badge-blue', 'CLOSED':'badge-green',
+    'MITIGATED':'badge-green', 'AUTOMATED':'badge-green', 'MONITOR':'badge-yellow',
+    'ONGOING':'badge-yellow', 'VERIFIED':'badge-green',
+  };
+  return <span className={`badge ${map[s]||'badge-gray'}`}>{s}</span>;
+}
+
+/* ─── Tabs ────────────────────────────────────────────────────────────────── */
+function Dashboard() {
+  const open   = DATA.openItems.filter(o => o.status === 'OPEN').length;
+  const closed = DATA.risks.filter(r => r.status === 'CLOSED').length;
+  const inProg = DATA.milestones.filter(m => m.status === 'IN PROGRESS').length;
+  const total  = DATA.risks.length;
+
+  return (
+    <div>
+      <div className="stat-grid">
+        <div className="stat-card"><div className="num">{DATA.milestones.length}</div><div className="lbl">Total Milestones</div></div>
+        <div className="stat-card" style={{borderLeftColor:'#2E75B6'}}><div className="num">{inProg}</div><div className="lbl">Milestones In Progress</div></div>
+        <div className="stat-card" style={{borderLeftColor:'#d9534f'}}><div className="num">{open}</div><div className="lbl">Open Items</div></div>
+        <div className="stat-card" style={{borderLeftColor:'#5cb85c'}}><div className="num">{closed}</div><div className="lbl">Risks Closed</div></div>
+        <div className="stat-card" style={{borderLeftColor:'#f0ad4e'}}><div className="num">{total - closed}</div><div className="lbl">Active Risks</div></div>
+      </div>
+
+      <section>
+        <h2>Milestone Summary</h2>
+        <table>
+          <thead><tr><th>ID</th><th>Target</th><th>Status</th><th>Progress</th><th>Blockers</th></tr></thead>
+          <tbody>
+            {DATA.milestones.map(m => (
+              <tr key={m.id}>
+                <td><b>{m.id}</b></td>
+                <td style={{whiteSpace:'nowrap'}}>{m.date}</td>
+                <td>{statusBadge(m.status)}</td>
+                <td style={{minWidth:120}}>
+                  <div className="progress-wrap"><div className="progress-bar" style={{width:m.pct+'%'}}/></div>
+                  <span style={{fontSize:11,color:'#555'}}>{m.pct}%</span>
+                </td>
+                <td style={{fontSize:12,color:'#c00'}}>{m.blocker || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Critical / High Open Items</h2>
+        <table>
+          <thead><tr><th>ID</th><th>Description</th><th>Owner</th><th>Status</th></tr></thead>
+          <tbody>
+            {DATA.openItems.filter(o => ['OPEN','APPLIED'].includes(o.status)).map(o => (
+              <tr key={o.id}>
+                <td><b style={{color:'#1F4E79'}}>{o.id}</b></td>
+                <td>{o.desc}</td>
+                <td style={{whiteSpace:'nowrap',fontSize:12}}>{o.owner}</td>
+                <td>{statusBadge(o.status)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+    </div>
+  );
+}
+
+function Milestones() {
+  return (
+    <section>
+      <h2>Milestone Details</h2>
+      <table>
+        <thead><tr><th>ID</th><th>Target Date</th><th>Description</th><th>Status</th><th>%</th><th>Blockers</th></tr></thead>
+        <tbody>
+          {DATA.milestones.map(m => (
+            <tr key={m.id}>
+              <td><b>{m.id}</b></td>
+              <td style={{whiteSpace:'nowrap'}}>{m.date}</td>
+              <td>{m.desc}</td>
+              <td>{statusBadge(m.status)}</td>
+              <td>{m.pct}%</td>
+              <td style={{fontSize:12,color:'#c00'}}>{m.blocker||'—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+function OpenItems() {
+  return (
+    <section>
+      <h2>Open Items (OI-04 through OI-12)</h2>
+      <table>
+        <thead><tr><th>ID</th><th>Description</th><th>Owner</th><th>Target</th><th>Status</th><th>Blocks</th></tr></thead>
+        <tbody>
+          {DATA.openItems.map(o => (
+            <tr key={o.id}>
+              <td><b style={{color:'#1F4E79'}}>{o.id}</b></td>
+              <td>{o.desc}</td>
+              <td style={{fontSize:12}}>{o.owner}</td>
+              <td style={{whiteSpace:'nowrap',fontSize:12}}>{o.target}</td>
+              <td>{statusBadge(o.status)}</td>
+              <td style={{fontSize:12}}>{o.blocks}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+function Risks() {
+  const [showClosed, setShowClosed] = useState(false);
+  const visible = showClosed ? DATA.risks : DATA.risks.filter(r => r.status !== 'CLOSED');
+  return (
+    <section>
+      <h2>Risk Register</h2>
+      <div style={{marginBottom:10}}>
+        <label style={{fontSize:13,cursor:'pointer'}}>
+          <input type="checkbox" checked={showClosed} onChange={e=>setShowClosed(e.target.checked)} style={{marginRight:6}}/>
+          Show closed risks
+        </label>
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>Description</th><th>Severity</th><th>Type</th><th>Status</th><th>Mitigation</th></tr></thead>
+        <tbody>
+          {visible.map(r => (
+            <tr key={r.id}>
+              <td><b style={{color:'#1F4E79'}}>{r.id}</b></td>
+              <td>{r.desc}</td>
+              <td>{sevBadge(r.sev)}</td>
+              <td><span className={`badge ${r.hw?'badge-blue':'badge-yellow'}`}>{r.hw?'HW':'SW'}</span></td>
+              <td>{statusBadge(r.status)}</td>
+              <td style={{fontSize:12}}>{r.note}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+/* ─── App Shell ───────────────────────────────────────────────────────────── */
+function App() {
+  const [tab, setTab] = useState('dashboard');
+  const tabs = [
+    {id:'dashboard',  label:'Dashboard'},
+    {id:'milestones', label:'Milestones'},
+    {id:'openitems',  label:'Open Items'},
+    {id:'risks',      label:'Risk Register'},
+  ];
+
+  return (
+    <div>
+      <header>
+        <h1>CESAT/NUST — FPGA-Enhanced FMUv6X Project Tracker</h1>
+        <p>STM32H753 + XC7S25 FPGA | DS-012 Rev5 + CESAT Extensions | Seed data: PP v2.6 &amp; HEP v6.0</p>
+      </header>
+      <nav>
+        {tabs.map(t => (
+          <button key={t.id} className={tab===t.id?'active':''} onClick={()=>setTab(t.id)}>{t.label}</button>
+        ))}
+      </nav>
+      <main>
+        {tab==='dashboard'  && <Dashboard/>}
+        {tab==='milestones' && <Milestones/>}
+        {tab==='openitems'  && <OpenItems/>}
+        {tab==='risks'      && <Risks/>}
+      </main>
+      <footer>
+        CESAT/NUST Islamabad &nbsp;|&nbsp; Data last updated: 2026-03-16 &nbsp;|&nbsp;
+        <a href="https://github.com/dne-nust" style={{color:'#2E75B6'}}>github.com/dne-nust</a>
+      </footer>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
