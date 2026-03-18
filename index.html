@@ -17,7 +17,7 @@
     nav button { background: none; border: none; color: #cce4f7; cursor: pointer;
                  padding: 10px 16px; font-size: 13px; font-weight: bold; border-bottom: 3px solid transparent; }
     nav button.active { color: #fff; border-bottom-color: #fff; }
-    main { padding: 20px 24px; max-width: 1100px; margin: 0 auto; }
+    main { padding: 20px 24px; max-width: 1200px; margin: 0 auto; }
     section h2 { color: #1F4E79; font-size: 16px; margin-bottom: 14px; padding-bottom: 6px;
                  border-bottom: 2px solid #2E75B6; }
     table { width: 100%; border-collapse: collapse; background: #fff;
@@ -33,6 +33,7 @@
     .badge-red     { background: #FFCCCC; color: #8B0000; }
     .badge-blue    { background: #D6E4F0; color: #1F4E79; }
     .badge-gray    { background: #e8e8e8; color: #555; }
+    .badge-purple  { background: #EAD6F5; color: #5a2d82; }
     .progress-wrap { background: #e0e0e0; border-radius: 4px; height: 8px; width: 100%; }
     .progress-bar  { height: 8px; border-radius: 4px; background: #2E75B6; }
     .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
@@ -41,11 +42,246 @@
     .stat-card .num { font-size: 28px; font-weight: bold; color: #1F4E79; }
     .stat-card .lbl { font-size: 11px; color: #666; margin-top: 2px; }
     footer { text-align: center; padding: 16px; color: #888; font-size: 11px; border-top: 1px solid #ddd; margin-top: 24px; }
+    /* Status summary bar */
+    .summary-bar { background: #fff; border-bottom: 2px solid #2E75B6; padding: 10px 24px;
+                   display: flex; align-items: center; gap: 20px; flex-wrap: wrap; font-size: 13px; }
+    .summary-bar .sum-item { display: flex; align-items: center; gap: 6px; }
+    .summary-bar .sum-label { color: #666; font-size: 12px; }
+    .summary-bar .sum-val { font-weight: bold; color: #1F4E79; }
+    .summary-bar .sep { color: #ccc; }
+    .summary-bar .milestone-chip { background: #D6E4F0; color: #1F4E79; padding: 2px 10px;
+                                    border-radius: 10px; font-size: 12px; font-weight: bold; }
+    .summary-bar .days-chip { background: #FFF2CC; color: #7a5a00; padding: 2px 10px;
+                               border-radius: 10px; font-size: 12px; font-weight: bold; }
+    /* WBS styles */
+    .wbs-banner { background: #FFF9E6; border: 1px solid #FFD966; border-radius: 6px;
+                  padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #7a5a00; }
+    .wbs-overall { background: #fff; border-radius: 6px; padding: 16px; margin-bottom: 20px;
+                   box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .wbs-overall .pct { font-size: 28px; font-weight: bold; color: #1F4E79; }
+    .wbs-overall .lbl { font-size: 12px; color: #666; margin-bottom: 8px; }
+    .phase-header { display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+                    border-radius: 4px; margin-top: 16px; margin-bottom: 4px; cursor: pointer; }
+    .phase-header .phase-name { font-weight: bold; font-size: 14px; flex: 1; }
+    .phase-mini-bar { width: 80px; height: 6px; background: #e0e0e0; border-radius: 3px; }
+    .phase-mini-fill { height: 6px; border-radius: 3px; }
+    .wbs-task-row { cursor: pointer; transition: background 0.1s; }
+    .wbs-task-row:hover td { background: #EBF3FB !important; }
+    .task-id { font-family: monospace; font-size: 12px; font-weight: bold; white-space: nowrap; }
+    .oi-warn { cursor: help; margin-left: 4px; font-size: 12px; }
+    /* TaskDetailPanel modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100;
+                     display: flex; align-items: flex-start; justify-content: flex-end; }
+    .modal-panel { background: #fff; width: 420px; max-width: 95vw; height: 100vh;
+                   overflow-y: auto; padding: 24px; box-shadow: -4px 0 20px rgba(0,0,0,0.2); }
+    .modal-panel h3 { font-size: 15px; color: #1F4E79; margin-bottom: 16px;
+                      border-bottom: 2px solid #2E75B6; padding-bottom: 8px; }
+    .modal-field { margin-bottom: 14px; }
+    .modal-field label { font-size: 11px; color: #666; font-weight: bold; display: block; margin-bottom: 4px; }
+    .modal-field .val { font-size: 13px; color: #222; }
+    .modal-field select, .modal-field textarea { width: 100%; font-size: 13px; border: 1px solid #ccc;
+                                                  border-radius: 4px; padding: 6px 8px; }
+    .modal-field textarea { min-height: 80px; resize: vertical; }
+    .modal-close { background: #1F4E79; color: #fff; border: none; border-radius: 4px;
+                   padding: 8px 16px; cursor: pointer; font-size: 13px; margin-top: 8px; }
+    .modal-close:hover { background: #2E75B6; }
   </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
+
+/* ─── Phase / Status Metadata ─────────────────────────────────────────────── */
+const PHASE_NAMES = {
+  1: 'Phase 1 — Hardware Design & Fabrication',
+  2: 'Phase 2 — Firmware, FPGA RTL & GCS Foundation',
+  3: 'Phase 3 — Algorithm Integration',
+  4: 'Phase 4 — Validation & Flight Test',
+  5: 'Phase 5 — Demonstration & Closeout',
+};
+const PHASE_COLORS = {
+  1: '#C8D8ED', 2: '#BDD7EE', 3: '#D5E8D4', 4: '#FFE6CC', 5: '#E1D5E7',
+};
+const PHASE_TEXT = {
+  1: '#1F4E79', 2: '#1F4E79', 3: '#1e6b2e', 4: '#8B4513', 5: '#5a2d82',
+};
+const STATUS_COLORS = {
+  'Done':        'badge-green',
+  'In Progress': 'badge-blue',
+  'Blocked':     'badge-red',
+  'Backlog':     'badge-gray',
+};
+const ALL_STATUSES = ['Backlog','In Progress','Blocked','Done'];
+
+/* ─── WBS Seed Tasks (PP v2.6 · HEP v6.0 · SDP v1.5) ──────────────────── */
+const SEED_TASKS = [
+  /* ── Phase 1: Hardware Design & Fabrication ── */
+  { id:'1.1',  name:'FMUM schematic: DS-012 SS-Rev5; SPI4→X2 SPARE02-06 for FPGA; SPI6→PAB X1 unchanged',
+    owner:'KiCad Engineer', due:'2026-04-01', start:'2026-03-18', depends:'',
+    phase:1, effort:'2w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+  { id:'1.2',  name:'Base board schematic: 10 sheets BASE-01 to BASE-10; BASE-08 SPI6 signals from X1; BASE-09 GPS1/GPS2',
+    owner:'KiCad Engineer', due:'2026-04-08', start:'2026-03-18', depends:'',
+    phase:1, effort:'3w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+  { id:'1.3',  name:'IMU board schematic (CESAT-designed, 4 sheets): IMU-01 power; IMU-02 SPI sensors (BMI088 SPI3, ICM-42688-P SPI2); IMU-03 I2C4 cluster (BMP581/0x46, RM3100/0x20, EEPROM/0x50); IMU-04 FPC connector',
+    owner:'KiCad Engineer', due:'2026-03-28', start:'2026-03-18', depends:'',
+    phase:1, effort:'1.5w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+  { id:'1.4',  name:'Precision sensor carrier: single PCB footprint for ADIS16488A / KT-EX9-1 / KT-EX9-2; mates with BASE-08',
+    owner:'KiCad Engineer', due:'2026-04-09', start:'2026-04-02', depends:'1.1',
+    phase:1, effort:'1w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+  { id:'1.5',  name:'STIM300 adapter: Micro-D15 to 8-pin JST-GH; 5V LDO; RS422 passthrough',
+    owner:'KiCad Engineer', due:'2026-04-04', start:'2026-04-02', depends:'1.1',
+    phase:1, effort:'0.5w', milestone:'M1', oi:'OI-07', status:'Backlog', notes:'' },
+  { id:'1.6',  name:'DRC/ERC all boards; SI analysis on SPI6 PAB X1 path and SPI4 SPARE path',
+    owner:'KiCad Engineer', due:'2026-04-11', start:'2026-04-09', depends:'1.1,1.2,1.3,1.4,1.5',
+    phase:1, effort:'0.5w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+  { id:'1.7',  name:'Bill of Materials: CESAT Rev5.1 sensor set — ICM-45686, ICM-42688-P, BMI088, BMP581×2, RM3100 (LCSC C2650387), SE050, FM25V02A-DG FRAM, ADIS16488A (procured). Confirm Digi-Key stock before PCB order.',
+    owner:'Dr. Najeeb Ahmad', due:'2026-04-16', start:'2026-04-09', depends:'1.6',
+    phase:1, effort:'1w', milestone:'M1', oi:'OI-07', status:'Backlog', notes:'' },
+  { id:'1.8',  name:'PCB fabrication: FMUM (4-layer), base board (6-layer), carrier, adapter — vendor lead time 3+ weeks',
+    owner:'Dr. Najeeb Ahmad', due:'2026-05-08', start:'2026-04-17', depends:'1.6,1.7',
+    phase:1, effort:'3w (vendor)', milestone:'M1', oi:'OI-07', status:'Backlog', notes:'' },
+  { id:'1.9',  name:'PCB assembly and initial inspection',
+    owner:'Technician', due:'2026-05-15', start:'2026-05-09', depends:'1.8',
+    phase:1, effort:'1w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+  { id:'1.10', name:'Hardware bring-up coordination: Stages S1-S10 per HEP v6.0 Section 15 — signed-off gate for M1',
+    owner:'Firmware Engineer', due:'2026-05-31', start:'2026-05-16', depends:'1.9',
+    phase:1, effort:'2w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+  /* Bring-up stages S1-S10 (depend on 1.9 per task spec) */
+  { id:'1.S1', name:'S1 — FMUM power-on: NuttX boots to NSH console; FRAM WHO_AM_I valid on SPI5; VDD_3V3_FMU stable; FPGA power rails sequenced on oscilloscope',
+    owner:'Firmware Engineer', due:'2026-05-10', start:'2026-05-09', depends:'1.9',
+    phase:1, effort:'0.2w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+  { id:'1.S2', name:'S2 — SPI6 PAB X1 signal integrity: loopback test BASE-08 connector at 10 MHz; confirms SCK=PB3, MISO=PA6 pin assignments',
+    owner:'Firmware Engineer', due:'2026-05-12', start:'2026-05-11', depends:'1.S1',
+    phase:1, effort:'0.2w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+  { id:'1.S3', name:'S3 — SPI4 SPARE signal integrity: logic analyser confirms SCK=PE12, MOSI=PE6, MISO=PE13, nCS=PH15, INT=PF3 on X2 SPARE pins; 33Ω termination verified',
+    owner:'Firmware Engineer', due:'2026-05-12', start:'2026-05-11', depends:'1.S1',
+    phase:1, effort:'0.2w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+  { id:'1.S4', name:'S4 — FPGA configuration: program W25Q32 via Vivado JTAG; DONE=PG6 goes high within 200ms; FPGA_VERSION register readable via SPI4; PWR_CTRL 0x07 enables RS422/RS485/RS232',
+    owner:'Firmware Engineer', due:'2026-05-15', start:'2026-05-13', depends:'1.S3',
+    phase:1, effort:'0.3w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+  { id:'1.S5', name:'S5 — IMU board FPC bring-up: ICM-42688-P SPI2/PH5, BMI088 SPI3/PI4+PI8; BMP581 BARO1 I2C4/0x46 (OI-11: reduce to 100kHz if spikes); RM3100 I2C4/0x20; EEPROM I2C4/0x50',
+    owner:'Firmware Engineer', due:'2026-05-16', start:'2026-05-13', depends:'1.S1',
+    phase:1, effort:'0.4w', milestone:'M1', oi:'OI-11', status:'Backlog', notes:'' },
+  { id:'1.S6', name:'S6 — FMUM sensors: ICM-45686 WHO_AM_I on SPI1/PI9; BMP581 BARO2 I2C2/0x46; SE050 responds at I2C4/0x48',
+    owner:'Firmware Engineer', due:'2026-05-16', start:'2026-05-13', depends:'1.S1',
+    phase:1, effort:'0.3w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+  { id:'1.S7', name:'S7 — Base Board I2C3: all six devices ACK (MS4525DO/0x28, INA226/0x40, INA226/0x41, ADS1115/0x48, ADS1115/0x49, MCP23017/0x20); CARRIER_DETECT pin readable',
+    owner:'Firmware Engineer', due:'2026-05-18', start:'2026-05-16', depends:'1.S4',
+    phase:1, effort:'0.3w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+  { id:'1.S8', name:'S8 — FPGA UART loopback: all 14 general-purpose UART channels pass TX→RX loopback via SPI4; RS485 DE/RE turn-around verified',
+    owner:'Firmware Engineer', due:'2026-05-20', start:'2026-05-18', depends:'1.S4',
+    phase:1, effort:'0.3w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+  { id:'1.S9', name:'S9 — GPS1: USART1 GNSS data; GPS1 compass driver publishes sensor_mag on I2C1; outdoor antenna required for satellite count > 0',
+    owner:'Firmware Engineer', due:'2026-05-22', start:'2026-05-20', depends:'1.S1',
+    phase:1, effort:'0.3w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+  { id:'1.S10',name:'S10 — Path B (SPI6): CARRIER_DETECT low, WHO_AM_I=0xAD16 (ADIS16488A), cesat_imu publishes; Path C (STIM300): CRC-valid datagrams at 460800 baud on UART14',
+    owner:'Firmware Engineer', due:'2026-05-31', start:'2026-05-22', depends:'1.S4,1.S7,1.S8',
+    phase:1, effort:'0.5w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
+
+  /* ── Phase 2: Firmware, FPGA RTL & GCS Foundation ── */
+  { id:'2.1',  name:'PX4 board target boards/cesat/fmuv6x/: board_config.h (SPI4=FPGA, SPI6=precision, BARO=0x46); CMakeLists.txt flags; NuttX defconfig; UART assignments (USART1=GPS1, UART8=GPS2)',
+    owner:'Firmware Engineer', due:'2026-06-07', start:'2026-06-01', depends:'1.10',
+    phase:2, effort:'1w', milestone:'M2', oi:'OI-12', status:'Backlog', notes:'' },
+  { id:'2.2',  name:'FPGA RTL (Vivado): 15 UART cores UART0-14; SPI4 slave register map (16-bit addr/8-bit data); PWM; ExtTrig; W25Q32 config flash; DONE=PG6; BRAM 30 FIFOs×512×8 = 33% RAMB18E1 — CRITICAL PATH (start during PCB fabrication)',
+    owner:'FPGA Engineer', due:'2026-05-08', start:'2026-04-17', depends:'1.1',
+    phase:2, effort:'3w', milestone:'M2', oi:'', status:'Backlog', notes:'' },
+  { id:'2.3',  name:'FPGA PX4 driver cesat_fpga (SPI4): register map, UART14 STIM300 registers, FPGA_INT=PF3 ISR, DONE=PG6 polling, virtual /dev/ttyFPGA0-14 enumeration; must start first in rc.board_sensors',
+    owner:'Firmware Engineer', due:'2026-06-11', start:'2026-06-01', depends:'2.2',
+    phase:2, effort:'1.5w', milestone:'M2', oi:'', status:'Backlog', notes:'' },
+  { id:'2.4',  name:'SPI6 precision IMU driver cesat_imu: ADIS16488A (PROD_ID=0xAD16, SPI Mode 3, max 10 MHz) + KT-EX9 pluggable WHO_AM_I table; CARRIER_DETECT via MCP23017; nRESET=PF10 asserted 10ms before first access',
+    owner:'Firmware Engineer', due:'2026-06-14', start:'2026-06-01', depends:'2.3',
+    phase:2, effort:'2w', milestone:'M2', oi:'OI-04,OI-05', status:'Backlog', notes:'' },
+  { id:'2.5',  name:'I2C driver integration: MS4525DO, INA226×2, ADS1115×2, MCP23017 (I2C3); RM3100 compass (I2C4/0x20); BMP581 BARO1 (I2C4/0x46) and BARO2 (I2C2/0x46)',
+    owner:'Firmware Engineer', due:'2026-06-07', start:'2026-06-01', depends:'2.1',
+    phase:2, effort:'1w', milestone:'M2', oi:'', status:'Backlog', notes:'' },
+  { id:'2.6',  name:'uORB custom messages: CesatFpgaStatus, CesatImuStatus, CesatAlgorithmStatus, CesatEstimatorState',
+    owner:'Firmware Engineer', due:'2026-06-10', start:'2026-06-08', depends:'2.5',
+    phase:2, effort:'0.5w', milestone:'M2', oi:'', status:'Backlog', notes:'' },
+  { id:'2.7',  name:'Startup script rc.board_sensors: 11-command sequence — cesat_fpga start; bmp581 start -I -b 4 -a 0x46 (BARO1); bmp581 start -I -b 2 -a 0x46 (BARO2); rm3100; I2C3 devices; cesat_imu start (3-path detection)',
+    owner:'Firmware Engineer', due:'2026-06-14', start:'2026-06-08', depends:'2.5',
+    phase:2, effort:'1w', milestone:'M2', oi:'OI-12', status:'Backlog', notes:'' },
+  { id:'2.8',  name:'CESAT SDK base layer: CesatEstimatorBase, CesatControllerBase, CesatProtocolBase abstract classes with uORB bridge helpers',
+    owner:'Firmware Engineer', due:'2026-06-18', start:'2026-06-08', depends:'2.1',
+    phase:2, effort:'1.5w', milestone:'M2', oi:'', status:'Backlog', notes:'' },
+  { id:'2.9',  name:'MAVLink custom messages 60001-60004 (CESAT_FPGA_STATUS, CESAT_IMU_STATUS, CESAT_ALGORITHM_STATUS, CESAT_ESTIMATOR_STATE) + cesat.xml dialect',
+    owner:'Firmware Engineer', due:'2026-06-21', start:'2026-06-15', depends:'2.6',
+    phase:2, effort:'1w', milestone:'M2', oi:'', status:'Backlog', notes:'' },
+  { id:'2.10', name:'SITL board target stub for custom algorithms — enables cesat_estimator/controller simulation without hardware',
+    owner:'Firmware Engineer', due:'2026-06-21', start:'2026-06-15', depends:'2.1',
+    phase:2, effort:'1w', milestone:'M2', oi:'', status:'Backlog', notes:'' },
+  { id:'2.11', name:'Scaffold script update (06_px4_software_scaffold.sh) — reflect new driver structure',
+    owner:'Firmware Engineer', due:'2026-06-24', start:'2026-06-22', depends:'2.10',
+    phase:2, effort:'0.5w', milestone:'M2', oi:'', status:'Backlog', notes:'' },
+  { id:'2.12', name:'QGC fork (cesat-qgc): custom build directory, CI pipeline (Linux AppImage + Windows NSIS), CESAT MAVLink dialect submodule',
+    owner:'QGC Engineer', due:'2026-06-07', start:'2026-06-01', depends:'',
+    phase:2, effort:'1w', milestone:'M2', oi:'', status:'Backlog', notes:'' },
+
+  /* ── Phase 3: Algorithm Integration ── */
+  { id:'3.1',  name:'STIM300 PX4 driver via FPGA UART14: 460800 baud RS422; datagram CRC-8 per frame; 0.5s warm-up state machine; ExtTrig sync via FPGA EXTTRIG_PERIOD register',
+    owner:'Firmware Engineer', due:'2026-07-18', start:'2026-07-01', depends:'2.3',
+    phase:3, effort:'2.5w', milestone:'M3', oi:'OI-06', status:'Backlog', notes:'' },
+  { id:'3.2',  name:'Custom estimator module cesat_estimator (INS/GNSS fusion; algorithm type per OI-08); CESAT_EST_EN parameter; subscribes sensor_accel/gyro/mag/baro/gps; publishes vehicle_attitude/local_position',
+    owner:'Firmware Engineer', due:'2026-07-28', start:'2026-07-01', depends:'2.8',
+    phase:3, effort:'4w', milestone:'M3', oi:'OI-08', status:'Backlog', notes:'' },
+  { id:'3.3',  name:'Custom controller module cesat_controller: rate/attitude/position loops; CESAT_CTRL_EN parameter; publishes actuator_motors/servos; activates only when cesat_estimator converged',
+    owner:'Firmware Engineer', due:'2026-08-18', start:'2026-07-29', depends:'3.2',
+    phase:3, effort:'3w', milestone:'M3', oi:'', status:'Backlog', notes:'' },
+  { id:'3.4',  name:'FPGA UART protocol framework (CesatProtocolBase) for ttyFPGA0-13: framing, CRC, multiplexing per OI-09 protocol definition',
+    owner:'Firmware Engineer', due:'2026-07-14', start:'2026-07-01', depends:'2.8',
+    phase:3, effort:'2w', milestone:'M3', oi:'OI-09', status:'Backlog', notes:'' },
+  { id:'3.5',  name:'uXRCE-DDS / ROS2 Ethernet bridge — publish uORB topics to ROS2 network via Micro-DDS agent',
+    owner:'Firmware Engineer', due:'2026-07-28', start:'2026-07-15', depends:'2.10',
+    phase:3, effort:'2w', milestone:'M3', oi:'', status:'Backlog', notes:'' },
+  { id:'3.6',  name:'Algorithm switching + 50ms safety watchdog + EKF2 fallback: cesat_diagnostics monitors cesat_estimator/controller freshness; auto-falls back to EKF2/PX4 standard on timeout',
+    owner:'Firmware Engineer', due:'2026-08-08', start:'2026-07-29', depends:'3.2,3.3',
+    phase:3, effort:'1.5w', milestone:'M3', oi:'', status:'Backlog', notes:'' },
+  { id:'3.7',  name:'CESAT diagnostics module: STIM300 CRC monitoring, FPGA FIFO health, CARRIER_DETECT state, MCP23017 GPIO integrity; publishes CesatFpgaStatus uORB',
+    owner:'Firmware Engineer', due:'2026-08-15', start:'2026-08-09', depends:'3.6',
+    phase:3, effort:'1w', milestone:'M3', oi:'', status:'Backlog', notes:'' },
+  { id:'3.8',  name:'QGC custom telemetry display: 3 panels — Estimator Status (CESAT_ALGORITHM_STATUS 60003), FPGA Health (CESAT_FPGA_STATUS 60001), Precision IMU (CESAT_IMU_STATUS 60002)',
+    owner:'QGC Engineer', due:'2026-07-28', start:'2026-07-15', depends:'2.12',
+    phase:3, effort:'2w', milestone:'M3', oi:'', status:'Backlog', notes:'' },
+  { id:'3.9',  name:'QGC custom parameter editor + algorithm switching UI with safety confirmation dialog; CESAT_EST_EN and CESAT_CTRL_EN toggles; preset management',
+    owner:'QGC Engineer', due:'2026-08-08', start:'2026-07-29', depends:'3.8',
+    phase:3, effort:'1.5w', milestone:'M3', oi:'', status:'Backlog', notes:'' },
+  { id:'3.10', name:'QGC UART channel table + raw protocol monitor (Task J initial): UART0-13 baud rate and protocol type table; raw frame monitor after OI-09 resolved',
+    owner:'QGC Engineer', due:'2026-08-22', start:'2026-08-09', depends:'3.8',
+    phase:3, effort:'2w', milestone:'M3', oi:'OI-09', status:'Backlog', notes:'' },
+
+  /* ── Phase 4: Validation & Flight Test ── */
+  { id:'4.1',  name:'Unit test suite: all drivers, algorithm modules, CRC validation per STIM300 frame, WHO_AM_I detection on SPI6, uORB field ranges',
+    owner:'Firmware Engineer', due:'2026-09-14', start:'2026-09-01', depends:'3.7',
+    phase:4, effort:'2w', milestone:'M4', oi:'', status:'Backlog', notes:'' },
+  { id:'4.2',  name:'Hardware-in-the-loop (HIL) validation: simulated sensor injection; all three sensor paths (A/B/C); watchdog fallback test',
+    owner:'Firmware Engineer', due:'2026-09-28', start:'2026-09-15', depends:'4.1',
+    phase:4, effort:'2w', milestone:'M4', oi:'', status:'Backlog', notes:'' },
+  { id:'4.3',  name:'Flight test bench: all three sensor paths; data quality comparison; custom estimator vs EKF2; data logging for algorithm comparison report',
+    owner:'All Team', due:'2026-10-19', start:'2026-09-29', depends:'4.2',
+    phase:4, effort:'3w', milestone:'M4', oi:'', status:'Backlog', notes:'' },
+  { id:'4.4',  name:'QGC flight mode UI: CESAT Estimator/Controller ON-OFF buttons in fly view; fallback alert banner; HUD algorithm status overlay',
+    owner:'QGC Engineer', due:'2026-09-14', start:'2026-09-01', depends:'2.12',
+    phase:4, effort:'2w', milestone:'M4', oi:'', status:'Backlog', notes:'' },
+  { id:'4.5',  name:'QGC ROS2/uXRCE-DDS integration panel: uXRCE-DDS agent status; on-FMU vs off-FMU algorithm deployment display',
+    owner:'QGC Engineer', due:'2026-09-25', start:'2026-09-15', depends:'3.5',
+    phase:4, effort:'1.5w', milestone:'M4', oi:'', status:'Backlog', notes:'' },
+  { id:'4.6',  name:'Algorithm comparison report: custom CESAT estimator vs EKF2 performance across all three sensor paths — bias stability, noise, convergence',
+    owner:'Dr. Najeeb Ahmad', due:'2026-10-31', start:'2026-10-20', depends:'4.3',
+    phase:4, effort:'2w', milestone:'M4', oi:'', status:'Backlog', notes:'' },
+
+  /* ── Phase 5: Demonstration & Closeout ── */
+  { id:'5.1',  name:'Final demonstration flight: all CESAT hardware and software operational; CESAT estimator active; STIM300 and ADIS16488A paths demonstrated',
+    owner:'All Team', due:'2026-11-15', start:'2026-11-15', depends:'4.3',
+    phase:5, effort:'1 event', milestone:'M5', oi:'', status:'Backlog', notes:'' },
+  { id:'5.2',  name:'Technical report v1.0: architecture, design decisions, experimental results — suitable for academic publication or internal archiving',
+    owner:'Dr. Najeeb Ahmad', due:'2026-11-14', start:'2026-11-01', depends:'4.6',
+    phase:5, effort:'2w', milestone:'M5', oi:'', status:'Backlog', notes:'' },
+  { id:'5.3',  name:'GitHub repository packaging: tagged release in dne-nust org; final documentation update; all three repos at consistent commit ref',
+    owner:'Firmware Engineer', due:'2026-11-22', start:'2026-11-16', depends:'5.1,5.2',
+    phase:5, effort:'1w', milestone:'M5', oi:'', status:'Backlog', notes:'' },
+  { id:'5.4',  name:'Project closeout: budget reconciliation; deliverable submission to CESAT management; confirm total spend ≤ PKR 500,000',
+    owner:'Dr. Najeeb Ahmad', due:'2026-11-27', start:'2026-11-23', depends:'5.3',
+    phase:5, effort:'0.5w', milestone:'M5', oi:'', status:'Backlog', notes:'' },
+];
 
 /* ─── Seed Data (from PP v2.6 and HEP v6.0) ──────────────────────────────── */
 const DATA = {
@@ -97,7 +333,7 @@ const DATA = {
 };
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
-const {useState} = React;
+const {useState, useMemo} = React;
 
 function sevBadge(sev) {
   const map = { Critical:'badge-red', High:'badge-orange', Medium:'badge-yellow', Low:'badge-green' };
@@ -112,8 +348,223 @@ function statusBadge(s) {
   };
   return <span className={`badge ${map[s]||'badge-gray'}`}>{s}</span>;
 }
+function taskStatusBadge(s) {
+  return <span className={`badge ${STATUS_COLORS[s]||'badge-gray'}`}>{s}</span>;
+}
+function milestoneBadge(m) {
+  const colors = { M1:'badge-blue', M2:'badge-blue', M3:'badge-green', M4:'badge-orange', M5:'badge-purple' };
+  return <span className={`badge ${colors[m]||'badge-gray'}`}>{m}</span>;
+}
+function daysUntil(dateStr) {
+  const today = new Date('2026-03-18');
+  const target = new Date(dateStr);
+  return Math.ceil((target - today) / (1000*60*60*24));
+}
 
-/* ─── Tabs ────────────────────────────────────────────────────────────────── */
+/* ─── StatusSummaryBar ───────────────────────────────────────────────────── */
+function StatusSummaryBar({ tasks }) {
+  const done     = tasks.filter(t => t.status === 'Done').length;
+  const inProg   = tasks.filter(t => t.status === 'In Progress').length;
+  const blocked  = tasks.filter(t => t.status === 'Blocked').length;
+  const backlog  = tasks.filter(t => t.status === 'Backlog').length;
+  const total    = tasks.length;
+  const nextMs   = 'M1';
+  const nextDate = '2026-05-31';
+  const days     = daysUntil(nextDate);
+
+  return (
+    <div className="summary-bar">
+      <div className="sum-item">
+        <span className="sum-label">Total tasks:</span>
+        <span className="sum-val">{total}</span>
+      </div>
+      <span className="sep">|</span>
+      <div className="sum-item">
+        <span style={{color:'#1e6b2e',fontWeight:'bold'}}>Done: {done}</span>
+      </div>
+      <div className="sum-item">
+        <span style={{color:'#1F4E79',fontWeight:'bold'}}>In Progress: {inProg}</span>
+      </div>
+      <div className="sum-item">
+        <span style={{color:'#8B0000',fontWeight:'bold'}}>Blocked: {blocked}</span>
+      </div>
+      <div className="sum-item">
+        <span style={{color:'#555',fontWeight:'bold'}}>Backlog: {backlog}</span>
+      </div>
+      <span className="sep">|</span>
+      <div className="sum-item">
+        <span className="sum-label">Next milestone:</span>
+        <span className="milestone-chip">{nextMs} — 31 May 2026</span>
+      </div>
+      <div className="sum-item">
+        <span className="days-chip">{days} days remaining</span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── TaskDetailPanel ────────────────────────────────────────────────────── */
+function TaskDetailPanel({ task, onClose, onUpdate }) {
+  const [status, setStatus] = useState(task.status);
+  const [notes,  setNotes]  = useState(task.notes);
+
+  function handleStatusChange(e) {
+    const newStatus = e.target.value;
+    setStatus(newStatus);
+    onUpdate(task.id, { status: newStatus, notes });
+  }
+  function handleNotesChange(e) {
+    const newNotes = e.target.value;
+    setNotes(newNotes);
+    onUpdate(task.id, { status, notes: newNotes });
+  }
+
+  return (
+    <div className="modal-overlay" onClick={e => { if(e.target===e.currentTarget) onClose(); }}>
+      <div className="modal-panel">
+        <h3>Task {task.id}</h3>
+        <div className="modal-field">
+          <label>NAME</label>
+          <div className="val">{task.name}</div>
+        </div>
+        <div className="modal-field">
+          <label>PHASE / MILESTONE</label>
+          <div className="val">Phase {task.phase} &nbsp;·&nbsp; {milestoneBadge(task.milestone)}</div>
+        </div>
+        <div className="modal-field">
+          <label>OWNER</label>
+          <div className="val">{task.owner}</div>
+        </div>
+        <div className="modal-field">
+          <label>EFFORT</label>
+          <div className="val">{task.effort}</div>
+        </div>
+        <div className="modal-field">
+          <label>START → DUE</label>
+          <div className="val">{task.start} → {task.due}</div>
+        </div>
+        {task.depends && (
+          <div className="modal-field">
+            <label>DEPENDS ON</label>
+            <div className="val" style={{fontFamily:'monospace',fontSize:12}}>{task.depends}</div>
+          </div>
+        )}
+        {task.oi && (
+          <div className="modal-field">
+            <label>BLOCKING OPEN ITEMS</label>
+            <div className="val" style={{color:'#8B4513',fontWeight:'bold'}}>⚠️ {task.oi}</div>
+          </div>
+        )}
+        <div className="modal-field">
+          <label>STATUS</label>
+          <select value={status} onChange={handleStatusChange}>
+            {ALL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div className="modal-field">
+          <label>NOTES</label>
+          <textarea value={notes} onChange={handleNotesChange} placeholder="Add notes…"/>
+        </div>
+        <button className="modal-close" onClick={onClose}>Close</button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── WBS View ───────────────────────────────────────────────────────────── */
+function WBS({ tasks, onSelectTask }) {
+  const totalDone = tasks.filter(t => t.status === 'Done').length;
+  const totalPct  = tasks.length ? Math.round(100 * totalDone / tasks.length) : 0;
+  const phases    = [1, 2, 3, 4, 5];
+
+  return (
+    <section>
+      <h2>Work Breakdown Structure</h2>
+
+      <div className="wbs-banner">
+        ℹ️ <strong>Option A — Session-only status tracking.</strong> Status changes made here are
+        visible for this browser session only. To save permanently, ask Claude Code to commit the
+        updated statuses to <code>index.html</code>.
+      </div>
+
+      <div className="wbs-overall">
+        <div className="lbl">Overall project progress (tasks marked Done)</div>
+        <div style={{display:'flex',alignItems:'center',gap:16,marginTop:6}}>
+          <div className="pct">{totalPct}%</div>
+          <div style={{flex:1}}>
+            <div className="progress-wrap" style={{height:12}}>
+              <div className="progress-bar" style={{width:totalPct+'%', height:12}}/>
+            </div>
+          </div>
+          <div style={{fontSize:13,color:'#555'}}>{totalDone} / {tasks.length} tasks done</div>
+        </div>
+      </div>
+
+      {phases.map(ph => {
+        const pTasks  = tasks.filter(t => t.phase === ph);
+        const pDone   = pTasks.filter(t => t.status === 'Done').length;
+        const pInProg = pTasks.filter(t => t.status === 'In Progress').length;
+        const pBlock  = pTasks.filter(t => t.status === 'Blocked').length;
+        const pPct    = pTasks.length ? Math.round(100 * pDone / pTasks.length) : 0;
+        const bg      = PHASE_COLORS[ph];
+        const tc      = PHASE_TEXT[ph];
+
+        return (
+          <div key={ph}>
+            <div className="phase-header" style={{background:bg}}>
+              <span className="phase-name" style={{color:tc}}>{PHASE_NAMES[ph]}</span>
+              <span style={{fontSize:12,color:tc,opacity:0.8}}>{pTasks.length} tasks</span>
+              <span className="badge badge-green" style={{fontSize:11}}>Done: {pDone}</span>
+              {pInProg>0 && <span className="badge badge-blue" style={{fontSize:11}}>In Progress: {pInProg}</span>}
+              {pBlock>0  && <span className="badge badge-red"  style={{fontSize:11}}>Blocked: {pBlock}</span>}
+              <div className="phase-mini-bar">
+                <div className="phase-mini-fill" style={{width:pPct+'%', background:tc, opacity:0.7}}/>
+              </div>
+              <span style={{fontSize:12,fontWeight:'bold',color:tc,minWidth:32}}>{pPct}%</span>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th style={{width:70}}>ID</th>
+                  <th>Task</th>
+                  <th style={{width:60}}>Effort</th>
+                  <th style={{width:160}}>Owner</th>
+                  <th style={{width:55}}>MS</th>
+                  <th style={{width:55}}>OI</th>
+                  <th style={{width:100}}>Status</th>
+                  <th style={{width:140}}>Depends On</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pTasks.map(t => (
+                  <tr key={t.id} className="wbs-task-row" onClick={() => onSelectTask(t)}>
+                    <td>
+                      <span className="task-id" style={{color:PHASE_TEXT[ph]}}>{t.id}</span>
+                    </td>
+                    <td style={{fontSize:12}}>{t.name}</td>
+                    <td style={{fontSize:11,whiteSpace:'nowrap'}}>{t.effort}</td>
+                    <td style={{fontSize:11}}>{t.owner}</td>
+                    <td>{milestoneBadge(t.milestone)}</td>
+                    <td>
+                      {t.oi
+                        ? <span className="oi-warn" title={t.oi}>⚠️ {t.oi}</span>
+                        : <span style={{color:'#ccc',fontSize:11}}>—</span>}
+                    </td>
+                    <td>{taskStatusBadge(t.status)}</td>
+                    <td style={{fontSize:11,color:'#888',fontFamily:'monospace'}}>{t.depends||'—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
+/* ─── Existing Tab Components ────────────────────────────────────────────── */
 function Dashboard() {
   const open   = DATA.openItems.filter(o => o.status === 'OPEN').length;
   const closed = DATA.risks.filter(r => r.status === 'CLOSED').length;
@@ -250,33 +701,60 @@ function Risks() {
 
 /* ─── App Shell ───────────────────────────────────────────────────────────── */
 function App() {
-  const [tab, setTab] = useState('dashboard');
+  const [tab, setTab]             = useState('dashboard');
+  const [tasks, setTasks]         = useState(SEED_TASKS);
+  const [selectedTask, setSelected] = useState(null);
+
   const tabs = [
     {id:'dashboard',  label:'Dashboard'},
     {id:'milestones', label:'Milestones'},
     {id:'openitems',  label:'Open Items'},
     {id:'risks',      label:'Risk Register'},
+    {id:'wbs',        label:'WBS'},
   ];
+
+  function handleTaskUpdate(id, changes) {
+    setTasks(prev => prev.map(t => t.id === id ? {...t, ...changes} : t));
+  }
+
+  function openTask(t) {
+    // find the live task from state (has latest status)
+    const live = tasks.find(x => x.id === t.id) || t;
+    setSelected(live);
+  }
 
   return (
     <div>
       <header>
         <h1>CESAT/NUST — FPGA-Enhanced FMUv6X Project Tracker</h1>
-        <p>STM32H753 + XC7S25 FPGA | DS-012 Rev5 + CESAT Extensions | Seed data: PP v2.6 &amp; HEP v6.0</p>
+        <p>STM32H753 + XC7S25 FPGA | DS-012 Rev5 + CESAT Extensions | Seed data: PP v2.6, HEP v6.0, SDP v1.5</p>
       </header>
       <nav>
         {tabs.map(t => (
           <button key={t.id} className={tab===t.id?'active':''} onClick={()=>setTab(t.id)}>{t.label}</button>
         ))}
       </nav>
+
+      <StatusSummaryBar tasks={tasks} />
+
       <main>
         {tab==='dashboard'  && <Dashboard/>}
         {tab==='milestones' && <Milestones/>}
         {tab==='openitems'  && <OpenItems/>}
         {tab==='risks'      && <Risks/>}
+        {tab==='wbs'        && <WBS tasks={tasks} onSelectTask={openTask}/>}
       </main>
+
+      {selectedTask && (
+        <TaskDetailPanel
+          task={tasks.find(t => t.id === selectedTask.id) || selectedTask}
+          onClose={() => setSelected(null)}
+          onUpdate={handleTaskUpdate}
+        />
+      )}
+
       <footer>
-        CESAT/NUST Islamabad &nbsp;|&nbsp; Data last updated: 2026-03-16 &nbsp;|&nbsp;
+        CESAT/NUST Islamabad &nbsp;|&nbsp; Data last updated: 2026-03-18 &nbsp;|&nbsp;
         <a href="https://github.com/dne-nust" style={{color:'#2E75B6'}}>github.com/dne-nust</a>
       </footer>
     </div>
