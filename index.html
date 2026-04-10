@@ -118,7 +118,7 @@ const SEED_TASKS = [
   /* ── Phase 1: Hardware Design & Fabrication ── */
   { id:'1.1',  name:'FMUM schematic: DS-012 SS-Rev5; SPI4→X2 SPARE02-06 for FPGA; SPI6→PAB X1 unchanged',
     owner:'KiCad Engineer', due:'2026-04-01', start:'2026-03-18', depends:'',
-    phase:1, effort:'2w', milestone:'M1', oi:'', status:'In Progress', notes:'KiCad 10.0.0 project created. Pre-capture reference documents complete. Capture sequence guide ready. Custom symbol creation next before component placement.' },
+    phase:1, effort:'2w', milestone:'M1', oi:'', status:'In Progress', notes:'KiCad 10.0.0 project created. Pre-capture reference documents complete. Capture sequence guide ready. Custom symbol creation next before component placement. | Note 2026-04-10: STM32H753IIK6 TFBGA-176 confirmed as correct MCU package per DDL-08. Symbol search in KiCad 10 and SnapEDA to be done for STM32H753IIK6 specifically — do not use STM32H753VIT6 (LQFP-100).' },
   { id:'1.2',  name:'Base board schematic: 10 sheets BASE-01 to BASE-10; BASE-08 SPI6 signals from X1; BASE-09 GPS1/GPS2',
     owner:'KiCad Engineer', due:'2026-04-08', start:'2026-03-18', depends:'',
     phase:1, effort:'3w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
@@ -309,6 +309,7 @@ const DATA = {
     { id:'R01', desc:'DS-012 ICM42649 typo causes wrong sensor ordered', sev:'Low',    hw:true,  status:'CLOSED',   note:'ICM-45686 confirmed (DDL-04)' },
     { id:'R02', desc:'ICP-20100 EOL, no stock',                          sev:'Low',    hw:true,  status:'CLOSED',   note:'BMP581 selected (DDL-02)' },
     { id:'R03', desc:'MMC5983MA inferior to RM3100',                     sev:'Low',    hw:true,  status:'CLOSED',   note:'RM3100 selected (DDL-03)' },
+    { id:'DDL-08', desc:'STM32H753 package incorrect — LQFP-100 used instead of TFBGA-176', sev:'Low', hw:true, status:'CLOSED', note:'DDL-08 RESOLVED 2026-04-10: STM32H753VIT6 LQFP-100 → STM32H753IIK6 TFBGA-176 per DS-012 Rev5. All documents updated. No schematic rework required (caught before capture began). HEP v6.1 issued.' },
     { id:'R04', desc:'STIM300 300 mA 5V load causes BASE-01 brownout',   sev:'High',   hw:true,  status:'OPEN',     note:'OI-07: current budget required before PCB order' },
     { id:'R05', desc:'KT-EX9-1 SPI WHO_AM_I unknown',                    sev:'Medium', hw:true,  status:'OPEN',     note:'OI-04 pending' },
     { id:'R06', desc:'KT-EX9-2 SPI mode unknown',                        sev:'Medium', hw:true,  status:'OPEN',     note:'OI-05 pending' },
