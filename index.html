@@ -116,9 +116,9 @@ const ALL_STATUSES = ['Backlog','In Progress','Blocked','Done'];
 /* ─── WBS Seed Tasks (PP v2.6 · HEP v6.0 · SDP v1.5) ──────────────────── */
 const SEED_TASKS = [
   /* ── Phase 1: Hardware Design & Fabrication ── */
-  { id:'1.1',  name:'FMUM schematic: DS-012 SS-Rev5; SPI4→X2 SPARE02-06 for FPGA; SPI6→PAB X1 unchanged',
+  { id:'1.1',  name:'FMUM schematic: DS-012 SS-Rev5; SPI4→X2 SPARE09-14 for FPGA (DDL-10); SPI6→PAB X2 (DDL-10)',
     owner:'KiCad Engineer', due:'2026-04-01', start:'2026-03-18', depends:'',
-    phase:1, effort:'2w', milestone:'M1', oi:'', status:'In Progress', notes:'KiCad 10.0.0 project created. Pre-capture reference documents complete. Capture sequence guide ready. Custom symbol creation next before component placement. | Note 2026-04-10: STM32H753IIK6 TFBGA-176 confirmed as correct MCU package per DDL-08. Symbol search in KiCad 10 and SnapEDA to be done for STM32H753IIK6 specifically — do not use STM32H753VIT6 (LQFP-100).' },
+    phase:1, effort:'2w', milestone:'M1', oi:'', status:'In Progress', notes:'KiCad 10.0.0 project created. Pre-capture reference documents complete. Capture sequence guide ready. Custom symbol creation next before component placement. | Note 2026-04-10: STM32H753IIK6 TFBGA-176 confirmed as correct MCU package per DDL-08. Symbol search in KiCad 10 and SnapEDA to be done for STM32H753IIK6 specifically — do not use STM32H753VIT6 (LQFP-100). | 2026-04-12: FMUM-01 power sheet COMPLETE. LP5912 + 3xMIC5330 power architecture confirmed. VDDA, VREF+, VBAT complete. ERC clean (0 errors). OI-07 resolved — STIM300 on +5V_HIPOWER. Moving to FMUM-02 STM32H753IIK6 core sheet.' },
   { id:'1.2',  name:'Base board schematic: 10 sheets BASE-01 to BASE-10; BASE-08 SPI6 signals from X1; BASE-09 GPS1/GPS2',
     owner:'KiCad Engineer', due:'2026-04-08', start:'2026-03-18', depends:'',
     phase:1, effort:'3w', milestone:'M1', oi:'', status:'Backlog', notes:'' },
@@ -286,7 +286,7 @@ const SEED_TASKS = [
 /* ─── Seed Data (from PP v2.6 and HEP v6.0) ──────────────────────────────── */
 const DATA = {
   milestones: [
-    { id:'M1', date:'31 May 2026', desc:'Hardware design complete, PCB fabricated, bring-up S1–S10', pct:10,  status:'IN PROGRESS', blocker:'OI-07' },
+    { id:'M1', date:'31 May 2026', desc:'Hardware design complete, PCB fabricated, bring-up S1–S10', pct:10,  status:'IN PROGRESS', blocker:'OI-13' },
     { id:'M2', date:'30 Jun 2026', desc:'PX4 board target, FPGA RTL, all drivers, SITL, QGC fork',  pct:0,   status:'NOT STARTED', blocker:'M1, OI-04, OI-05, OI-08' },
     { id:'M3', date:'31 Aug 2026', desc:'Custom algorithms, STIM300, protocol framework, QGC telemetry', pct:0, status:'NOT STARTED', blocker:'M2, OI-06, OI-09' },
     { id:'M4', date:'31 Oct 2026', desc:'Full validation, flight test, QGC flight mode UI',          pct:0,   status:'NOT STARTED', blocker:'M3' },
@@ -297,7 +297,7 @@ const DATA = {
     { id:'OI-04', desc:'KT-EX9-1 PROD_ID register and expected value for SPI6 WHO_AM_I detection', owner:'Dr. Najeeb Ahmad', target:'Before M2', status:'OPEN', blocks:'cesat_imu (KT-EX9-1 path)' },
     { id:'OI-05', desc:'KT-EX9-2 SPI mode (Mode 0 or Mode 3)', owner:'Dr. Najeeb Ahmad', target:'Before M2', status:'OPEN', blocks:'cesat_imu (KT-EX9-2 path)' },
     { id:'OI-06', desc:'STIM300 driver milestone — M2 or M3? Decision required immediately', owner:'Dr. Shakaiba Majeed', target:'Immediate', status:'OPEN', blocks:'cesat_stim300 scheduling' },
-    { id:'OI-07', desc:'BASE-01 5V rail current budget with STIM300 300 mA peak load', owner:'PCB designer', target:'Before M1 PCB order', status:'OPEN', blocks:'PCB ORDER — BLOCKS M1' },
+    { id:'OI-07', desc:'BASE-01 5V rail current budget with STIM300 300 mA peak load', owner:'PCB designer', target:'Before M1 PCB order', status:'CLOSED', blocks:'RESOLVED 2026-04-12: STIM300 300mA on +5V_HIPOWER (DDL-11). +5V_PERIPH unaffected.' },
     { id:'OI-08', desc:'Custom INS algorithm type (EKF/UKF/complementary) and control law selection', owner:'Dr. Najeeb Ahmad + Dr. Hamid Jabbar', target:'Before M2', status:'OPEN', blocks:'cesat_estimator, cesat_controller' },
     { id:'OI-09', desc:'Custom FPGA UART protocol — framing, CRC, multiplexing on ttyFPGA', owner:'Dr. Najeeb Ahmad', target:'Before M3', status:'OPEN', blocks:'CesatProtocolBase impl' },
     { id:'OI-11', desc:'BMP581 I2C4 intermittent bus spikes (PX4 #26287) — verify pull-ups at Stage S4', owner:'PCB designer + firmware', target:'Stage S4 bring-up', status:'OPEN', blocks:'Monitor only' },
@@ -310,7 +310,7 @@ const DATA = {
     { id:'R02', desc:'ICP-20100 EOL, no stock',                          sev:'Low',    hw:true,  status:'CLOSED',   note:'BMP581 selected (DDL-02)' },
     { id:'R03', desc:'MMC5983MA inferior to RM3100',                     sev:'Low',    hw:true,  status:'CLOSED',   note:'RM3100 selected (DDL-03)' },
     { id:'DDL-08', desc:'STM32H753 package incorrect — LQFP-100 used instead of TFBGA-176', sev:'Low', hw:true, status:'CLOSED', note:'DDL-08 RESOLVED 2026-04-10: STM32H753VIT6 LQFP-100 → STM32H753IIK6 TFBGA-176 per DS-012 Rev5. All documents updated. No schematic rework required (caught before capture began). HEP v6.1 issued.' },
-    { id:'R04', desc:'STIM300 300 mA 5V load causes BASE-01 brownout',   sev:'High',   hw:true,  status:'OPEN',     note:'OI-07: current budget required before PCB order' },
+    { id:'R04', desc:'STIM300 300 mA 5V load causes BASE-01 brownout',   sev:'High',   hw:true,  status:'CLOSED',   note:'OI-07 RESOLVED 2026-04-12: STIM300 powered from +5V_HIPOWER on BASE-01 — isolated from +5V_PERIPH (DDL-11).' },
     { id:'R05', desc:'KT-EX9-1 SPI WHO_AM_I unknown',                    sev:'Medium', hw:true,  status:'OPEN',     note:'OI-04 pending' },
     { id:'R06', desc:'KT-EX9-2 SPI mode unknown',                        sev:'Medium', hw:true,  status:'OPEN',     note:'OI-05 pending' },
     { id:'R07', desc:'ICM-45686 DRDY PF2 shared signal conflict',        sev:'Medium', hw:true,  status:'OPEN',     note:'Verify at Stage S5' },
